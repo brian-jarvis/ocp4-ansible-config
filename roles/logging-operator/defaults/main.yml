@@ -1,0 +1,18 @@
+---
+# defaults file for logging-operator
+
+kube_config_path: "{{ mandatory }}"
+
+
+## Elastic Settings
+elastic_namespace: "openshift-operators-redhat"
+elastic_labels: 
+  openshift.io/cluster-logging: "true"
+  openshift.io/cluster-monitoring: "true"
+
+## Logging Settings
+logging_namespace: "openshift-logging"
+logging_labels: 
+  openshift.io/cluster-logging: "true"
+  openshift.io/cluster-monitoring: "true"
+  

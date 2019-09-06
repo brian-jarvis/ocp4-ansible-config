@@ -1,0 +1,5 @@
+- name: clean up the temporary folder structure
+  file:
+    path: '{{ tmp_dir }}'
+    state: absent
+  when: tmp_dir is defined

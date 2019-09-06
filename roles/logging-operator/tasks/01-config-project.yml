@@ -1,0 +1,35 @@
+---
+
+- name: Add Elasticsearch Operator project
+  oc_project:
+    name: "{{ elastic_namespace }}"
+    kubeconfig: "{{ kube_config_path }}"
+    state: present
+    description: Elasticsearch Operator
+    node_selector: ""
+
+- name: Label Elasticsearch project
+  oc_label:
+    name: "{{ elastic_namespace }}"
+    kubeconfig: "{{ kube_config_path }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ elastic_labels | dict2items }}"
+
+- name: Add Logging Operator project
+  oc_project:
+    name: "{{ logging_namespace }}"
+    kubeconfig: "{{ kube_config_path }}"
+    state: present
+    description: Logging Operator
+    node_selector: ""
+
+- name: Label Logging project
+  oc_label:
+    name: "{{ logging_namespace }}"
+    kubeconfig: "{{ kube_config_path }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ logging_labels | dict2items }}"

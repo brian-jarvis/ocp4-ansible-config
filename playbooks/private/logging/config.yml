@@ -1,0 +1,37 @@
+---
+- name: Cluster Logging Operator Checkpoint Start
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Set Cluster Operator 'In Progress'
+    run_once: true
+    set_stats:
+      data:
+        installer_phase_application_monitoring_operator:
+          title: "Cluster Logging Operator"
+          playbook: "playbooks/logging/config.yml"
+          status: "In Progress"
+          start: "{{ lookup('pipe', 'date +%Y%m%d%H%M%SZ') }}"
+
+
+- name: Configure Cluster Logging Operator
+  hosts: all
+  gather_facts: false
+  vars:
+    openshift_ansible_path: "/usr/share/ansible/openshift-ansible"
+  roles:
+    - role: "{{ openshift_ansible_path }}/roles/lib_utils"
+    - role: "{{ openshift_ansible_path }}/roles/lib_openshift"
+    - role: logging-operator
+
+- name: Cluster Logging Operator Checkpoint End
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Set Cluster Logging Operator 'Complete'
+    run_once: true
+    set_stats:
+      data:
+        installer_phase_application_monitoring_operator:
+          status: "Complete"
+          end: "{{ lookup('pipe', 'date +%Y%m%d%H%M%SZ') }}"

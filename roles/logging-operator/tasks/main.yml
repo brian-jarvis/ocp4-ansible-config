@@ -1,0 +1,11 @@
+---
+# tasks file for logging-operator
+
+- include: 00-config-workspace.yml
+
+- include_tasks: 01-config-project.yml
+
+- include_tasks: 02-install-elastic.yml
+
+
+- include_tasks: 05-cleanup-tasks.yml
