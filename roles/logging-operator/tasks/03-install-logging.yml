@@ -1,0 +1,72 @@
+---
+
+- name: "Logging: template operator Config"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ tmp_dir }}/{{ item }}"
+  loop:
+    - "logging-operatorgroup.yml"
+
+- name: "Logging: Apply OperatorGroup"
+  oc_obj:
+    name: logging-operators
+    kubeconfig: "{{ kube_config_path }}"
+    state: present
+    namespace: "{{ logging_namespace }}"
+    kind: OperatorGroup
+    files:
+    - "{{ tmp_dir }}/logging-operatorgroup.yml"
+
+- name: "Logging: Get packagemanifest"
+  oc_obj:
+    name: cluster-logging
+    kubeconfig: "{{ kube_config_path }}"
+    state: list
+    namespace: openshift-operator-lifecycle-manager
+    kind: PackageManifest
+  register: pckmnfst
+
+- name: Debug packagemanifest
+  debug:
+    var: pckmnfst
+
+- name: "Debug packagemanifest channel"
+  debug:
+    msg: "test: {{ pckmnfst.module_results.results[0].status.channels[0].name }}"
+
+- set_fact:
+    logging_channel: "{{ pckmnfst.module_results.results[0].status.channels[0].name }}"
+
+- name: "Logging: template ES Subscription"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ tmp_dir }}/{{ item }}"
+  loop:
+    - "logging-subscription.yml"
+
+- name: "Logging: Apply Subscription"
+  oc_obj:
+    name: cluster-logging
+    kubeconfig: "{{ kube_config_path }}"
+    state: present
+    namespace: "{{ logging_namespace }}"
+    kind: Subscription
+    files:
+    - "{{ tmp_dir }}/logging-subscription.yml"
+
+- name: "Logging: template clusterlogging Config"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ tmp_dir }}/{{ item }}"
+  loop:
+    - "logging-clusterlogging.yml"
+
+- name: "Logging: Apply ClusterLogging"
+  oc_obj:
+    name: instance
+    kubeconfig: "{{ kube_config_path }}"
+    state: present
+    namespace: "{{ logging_namespace }}"
+    kind: ClusterLogging
+    files:
+    - "{{ tmp_dir }}/logging-clusterlogging.yml"

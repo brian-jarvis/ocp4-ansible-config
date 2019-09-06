@@ -9,6 +9,10 @@ elastic_namespace: "openshift-operators-redhat"
 elastic_labels: 
   openshift.io/cluster-logging: "true"
   openshift.io/cluster-monitoring: "true"
+elastic_replica_count: 3
+elastic_storage_storageclass: ""
+elastic_storage_size: "200G"
+elastic_redundancy_policy: "SingleRedundancy"
 
 ## Logging Settings
 logging_namespace: "openshift-logging"
@@ -16,3 +20,4 @@ logging_labels:
   openshift.io/cluster-logging: "true"
   openshift.io/cluster-monitoring: "true"
   
+logging_kibana_replica: 1
