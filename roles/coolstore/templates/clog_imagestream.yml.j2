@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ImageStream
+metadata:
+  name: {{ clog_appname }}
+  labels:
+    app: {{ clog_appname }}
+spec:
+  tags:
+  - name: latest

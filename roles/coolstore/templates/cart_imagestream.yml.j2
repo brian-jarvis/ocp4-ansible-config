@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ImageStream
+metadata:
+  name: {{ cart_appname }}
+  labels:
+    app: {{ cart_appname }}
+spec:
+  tags:
+  - name: latest

@@ -1,0 +1,37 @@
+
+[masters:vars]
+ansible_become=true
+fe_route_hostname=coolstore.apps.perimeter.bry.tamlab.rdu2.redhat.com
+fe_namespace_nodeselectors={'node-role.kubernetes.io/perimeter': 'true'}
+fe_namespace_labels={'router': 'perimeter'}
+
+gw_route_hostname=coolstore-gw.apps.perimeter.bry.tamlab.rdu2.redhat.com
+gw_namespace_nodeselectors={'node-role.kubernetes.io/perimeter': 'true'}
+gw_namespace_labels={'router': 'perimeter'}
+
+invntry_route_hostname=cs-inventory.apps.business.bry.tamlab.rdu2.redhat.com
+invntry_namespace_nodeselectors={'node-role.kubernetes.io/business': 'true'}
+invntry_namespace_labels={'router': 'business'}
+
+clog_route_hostname=cs-catalog.apps.business.bry.tamlab.rdu2.redhat.com
+clog_namespace_nodeselectors={'node-role.kubernetes.io/business': 'true'}
+clog_namespace_labels={'router': 'business'}
+
+rate_route_hostname=cs-rating.apps.business.bry.tamlab.rdu2.redhat.com
+rate_namespace_nodeselectors={'node-role.kubernetes.io/business': 'true'}
+rate_namespace_labels={'router': 'business'}
+
+cart_route_hostname=cs-cart.apps.business.bry.tamlab.rdu2.redhat.com
+cart_namespace_nodeselectors={'node-role.kubernetes.io/business': 'true'}
+cart_namespace_labels={'router': 'business'}
+
+price_route_hostname=cs-pricing.apps.business.bry.tamlab.rdu2.redhat.com
+price_namespace_nodeselectors={'node-role.kubernetes.io/business': 'true'}
+price_namespace_labels={'router': 'business'}
+
+rvw_route_hostname=cs-review.apps.business.bry.tamlab.rdu2.redhat.com
+rvw_namespace_nodeselectors={'node-role.kubernetes.io/business': 'true'}
+rvw_namespace_labels={'router': 'business'}
+
+[masters]
+vst1osm01.bry.tamlab.rdu2.redhat.com

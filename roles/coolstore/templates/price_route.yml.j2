@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ price_appname }}
+  labels:
+    app: "{{ price_appname }}"
+spec:
+  host: {{ price_route_hostname }}
+  to:
+    kind: Service
+    name: {{ price_appname }}

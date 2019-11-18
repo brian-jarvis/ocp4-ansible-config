@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: review-config
+  labels:
+    app: {{ rvw_appname }}
+data:
+  review-config.yml: |-
+    project:
+      stage: production
+    swarm:
+      datasources:
+        data-sources:
+          ReviewDS:
+            driver-name: postgresql
+            connection-url: jdbc:postgresql://review-postgresql.{{ rvw_namespace }}.svc:5432/review
+            user-name: {{ rvw_db_username }}
+            password: {{ rvw_db_password }}

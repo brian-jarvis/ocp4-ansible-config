@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ invntry_appname }}
+  labels:
+    app: "{{ invntry_appname }}"
+spec:
+  host: {{ invntry_route_hostname }}
+  to:
+    kind: Service
+    name: {{ invntry_appname }}
+    weight: 100

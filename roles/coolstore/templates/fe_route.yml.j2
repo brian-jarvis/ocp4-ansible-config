@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ fe_appname }}
+  labels:
+    app: "{{ fe_appname }}"
+    comp-required: "true"
+spec:
+  host: {{ fe_route_hostname }}
+  to:
+    kind: Service
+    name: {{ fe_appname }}

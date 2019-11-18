@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: {{ gw_appname }}
+  labels:
+    app: {{ gw_appname }}
+    comp-required: "true"
+spec:
+  replicas: 1
+  selector:
+    deploymentconfig: {{ gw_appname }}
+  strategy:
+    resources: {}
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ gw_appname }}
+        deploymentconfig: {{ gw_appname }}
+      name: {{ gw_appname }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CART_ENDPOINT
+          value: {{ cart_appname }}.{{ cart_namespace }}.svc:8080
+        - name: INVENTORY_ENDPOINT
+          value: {{ invntry_appname }}.{{ invntry_namespace }}.svc:8080
+        - name: CATALOG_ENDPOINT
+          value: {{ clog_appname }}.{{ clog_namespace }}.svc:8080
+        - name: RATING_ENDPOINT
+          value: {{ rate_appname }}.{{ rate_namespace }}.svc:8080
+        - name: REVIEW_ENDPOINT
+          value: {{ rvw_appname }}.{{ rvw_namespace }}.svc:8080
+        image: library/{{ gw_appname }}:latest
+        livenessProbe:
+          exec:
+            command:
+              - curl
+              - '-f'
+              - 'http://localhost:8081/health'
+          initialDelaySeconds: 30
+          failureThreshold: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        name: {{ gw_appname }}
+        ports:
+        - containerPort: 8778
+          name: jolokia
+        readinessProbe:
+          exec:
+            command:
+              - curl
+              - '-f'
+              - 'http://localhost:8081/health'
+          initialDelaySeconds: 30
+          failureThreshold: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 512Mi
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - {{ gw_appname }}
+      from:
+        kind: ImageStreamTag
+        name: {{ gw_appname }}:latest
+    type: ImageChange
+  - type: ConfigChange

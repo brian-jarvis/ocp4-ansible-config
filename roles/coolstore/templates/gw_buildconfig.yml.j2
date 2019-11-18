@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: {{ gw_appname }}
+  labels:
+    comp-required: "true"
+    app: {{ gw_appname }}
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ gw_appname }}:latest
+  source:
+    contextDir: {{ gw_appname }}
+    git:
+      ref: {{git_branch }}
+      uri: {{ git_repo_uri }}
+    type: Git
+  strategy:
+    sourceStrategy:
+      env:
+      - name: MAVEN_ARGS
+        value: package -DskipTests -Dfabric8.skip -e -B -Pearly-access-repo
+      - name: MAVEN_MIRROR_URL
+        value: {{ maven_mirror }}
+      forcePull: false
+      from:
+        kind: ImageStreamTag
+        namespace: openshift
+        name: fis-java-openshift:2.0
+    type: Source
+  resources:
+    limits:
+      cpu: 500m
+      memory: "2Gi"
+    requests:
+      cpu: "200m"
+      memory: "1Gi"

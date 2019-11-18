@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ cart_appname }}
+  labels:
+    app: "{{ cart_appname }}"
+    comp-required: "true"
+spec:
+  host: {{ cart_route_hostname }}
+  to:
+    kind: Service
+    name: {{ cart_appname }}

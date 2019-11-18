@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ gw_appname }}
+  labels:
+    app: "{{ gw_appname }}"
+    comp-required: "true"
+spec:
+  host: {{ gw_route_hostname }}
+  to:
+    kind: Service
+    name: {{ gw_appname }}

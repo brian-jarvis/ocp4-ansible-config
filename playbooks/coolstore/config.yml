@@ -1,0 +1,26 @@
+---
+
+
+## Deploy CoolStore Frontend Web UI
+- import_playbook: ../private/coolstore/frontend-ui/config.yml
+
+## Deploy CoolStore Gateway UI
+- import_playbook: ../private/coolstore/gateway/config.yml
+
+## Deploy CoolStore Inventory
+- import_playbook: ../private/coolstore/inventory/config.yml
+
+## Deploy CoolStore Catalog
+- import_playbook: ../private/coolstore/catalog/config.yml
+
+## Deploy CoolStore Rating
+- import_playbook: ../private/coolstore/rating/config.yml
+
+## Deploy CoolStore Cart
+- import_playbook: ../private/coolstore/cart/config.yml
+
+## Deploy CoolStore Pricing
+- import_playbook: ../private/coolstore/pricing/config.yml
+
+## Deploy CoolStore Review
+- import_playbook: ../private/coolstore/review/config.yml

@@ -1,0 +1,137 @@
+## Deploy the Catalog service
+
+# create working location for deploying catalog-interface
+- name: Create temp directory for doing work in on target
+  command: mktemp -td coolstore-catalog-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    clog_tmpdir: "{{ mktemp.stdout }}"
+
+- set_fact:
+    clog_ns: "{{ clog_ns | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ clog_namespace_nodeselectors }}"
+
+- set_fact:
+    clog_lb: "{{ clog_lb | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ clog_namespace_labels }}"
+
+
+- name: Add project for catalog
+  oc_project:
+    state: present
+    name: "{{ clog_namespace }}"
+    description: Coolstore Catalog
+    node_selector: "{{ clog_ns }}"
+
+- name: Label catalog project
+  oc_label:
+    name: "{{ clog_namespace }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ clog_namespace_labels | dict2items }}"
+
+- name: "process catalog defs from template"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ clog_tmpdir }}/{{ item }}"
+  loop:
+    - "clog_buildconfig.yml"
+    - "clog_deployconfig.yml"
+    - "clog-mongo_deployconfig.yml"
+    - "clog_imagestream.yml"
+    - "clog_route.yml"
+
+- name: "Create ImageStream"
+  oc_obj:
+    state: present
+    name: "{{ clog_appname }}"
+    namespace: "{{ clog_namespace }}"
+    kind: ImageStream
+    files:
+    - "{{ clog_tmpdir }}/clog_imagestream.yml"
+
+- name: "Create BuildConfig"
+  oc_obj:
+    state: present
+    name: "{{ clog_appname }}"
+    namespace: "{{ clog_namespace }}"
+    kind: BuildConfig
+    files:
+    - "{{ clog_tmpdir }}/clog_buildconfig.yml"
+    
+- name: "Create DeployConfig"
+  oc_obj:
+    state: present
+    name: "{{ clog_appname }}"
+    namespace: "{{ clog_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ clog_tmpdir }}/clog_deployconfig.yml"
+
+- name: "Create Mongodb DeployConfig"
+  oc_obj:
+    state: present
+    name: "catalog-mongodb"
+    namespace: "{{ clog_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ clog_tmpdir }}/clog-mongo_deployconfig.yml"
+
+- name: create service for catalog
+  oc_service:
+    name: "{{ clog_appname }}"
+    namespace: "{{ clog_namespace }}"
+    labels:
+      app: "{{ clog_appname }}"
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+        protocol: TCP
+    selector:
+      deploymentconfig: "{{ clog_appname }}"
+
+- name: create service for catalog-mongodb
+  oc_service:
+    name: "catalog-mongodb"
+    namespace: "{{ clog_namespace }}"
+    labels:
+      app: "catalog-mongodb"
+      comp-required: "true"
+    ports:
+      - name: mongo
+        port: 27017
+        targetPort: 27017
+        protocol: TCP
+    selector:
+      deploymentconfig: "catalog-mongodb"
+    session_affinity: None
+    service_type: ClusterIP
+
+- name: "Create Route"
+  oc_obj:
+    state: present
+    name: "{{ clog_appname }}"
+    namespace: "{{ clog_namespace }}"
+    kind: Route
+    files:
+    - "{{ clog_tmpdir }}/clog_route.yml"
+
+
+## setup clusterrole so the app can query the api
+- name: Create coolstore cluster role
+  oc_clusterrole:
+    state: present
+    name: "{{ cs_clusterrole }}"
+    rules:
+      - apiGroups:
+        - ""
+        resources:
+        - pods
+        - configmaps
+        verbs:
+        - get
+        - list

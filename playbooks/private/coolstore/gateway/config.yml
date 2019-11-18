@@ -1,0 +1,38 @@
+---
+- name: CoolStore Gateway Checkpoint Start
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Set Cluster Operator 'In Progress'
+    run_once: true
+    set_stats:
+      data:
+        installer_phase_coolstore_gateway_application:
+          title: "CoolStore Gatewau"
+          playbook: "playbooks/coolstore/gateway/config.yml"
+          status: "In Progress"
+          start: "{{ lookup('pipe', 'date +%Y%m%d%H%M%SZ') }}"
+
+
+- name: Configure CoolStore Gateway
+  hosts: all
+  gather_facts: false
+  vars:
+    openshift_ansible_path: "/usr/share/ansible/openshift-ansible"
+  tasks:
+    - name: Install CoolStore Gateway
+      include_role:
+        name: coolstore
+        tasks_from: gateway
+
+- name: CoolStore Gateway Checkpoint End
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Set Cluster Logging Operator 'Complete'
+    run_once: true
+    set_stats:
+      data:
+        installer_phase_coolstore_gateway_application:
+          status: "Complete"
+          end: "{{ lookup('pipe', 'date +%Y%m%d%H%M%SZ') }}"

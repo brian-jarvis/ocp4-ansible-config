@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: {{ fe_appname }}
+  labels:
+    app: {{ fe_appname }}
+    comp-required: "true"
+spec:
+  replicas: 1
+  selector:
+    app: {{ fe_appname }}
+    deploymentconfig: {{ fe_appname }}
+  strategy:
+    resources: {}
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ fe_appname }}
+        deploymentconfig: {{ fe_appname }}
+    spec:
+      containers:
+      - env:
+        - name: COOLSTORE_GW_ENDPOINT
+          value: http://{{ gw_route_hostname }}
+        - name: HOSTNAME_HTTP
+          value: {{ fe_appname }}:8080
+        image: {{ fe_appname }}
+        imagePullPolicy: Always
+        name: {{ fe_appname }}
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 10
+          exec:
+            command:
+              - curl
+              - '-f'
+              - 'http://localhost:8080'
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+        readinessProbe:
+          failureThreshold: 10
+          exec:
+            command:
+              - curl
+              - '-f'
+              - 'http://localhost:8080'
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - {{ fe_appname }}
+      from:
+        kind: ImageStreamTag
+        name: {{ fe_appname }}:latest
+    type: ImageChange
+  - type: ConfigChange

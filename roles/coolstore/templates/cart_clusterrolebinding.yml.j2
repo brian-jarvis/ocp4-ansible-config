@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: coolstore-{{ cart_appname }}-access
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: {{ cart_namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: coolstore

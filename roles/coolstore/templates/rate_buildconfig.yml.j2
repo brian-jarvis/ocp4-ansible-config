@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: {{ rate_appname }}
+  labels:
+    app: {{ rate_appname }}
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ rate_appname }}:latest
+  source:
+    contextDir: rating-service
+    git:
+      ref: {{git_branch }}
+      uri: {{ git_repo_uri }}
+    type: Git
+  strategy:
+    sourceStrategy:
+      env:
+      - name: MAVEN_MIRROR_URL
+        value: {{ maven_mirror }}
+      from:
+        kind: ImageStreamTag
+        name: redhat-openjdk18-openshift:1.1
+        namespace: openshift
+    type: Source

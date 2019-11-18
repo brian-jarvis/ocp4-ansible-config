@@ -1,0 +1,94 @@
+
+# create working location for deploying frontend-ui
+- name: Create temp directory for doing work in on target
+  command: mktemp -td coolstore-ui-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    fe_tmpdir: "{{ mktemp.stdout }}"
+
+- set_fact:
+    fe_ns: "{{ fe_ns | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ fe_namespace_nodeselectors }}"
+
+- set_fact:
+    fe_lb: "{{ fe_lb | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ fe_namespace_labels }}"
+
+
+- name: Add project for frontend-ui
+  oc_project:
+    state: present
+    name: "{{ fe_namespace }}"
+    description: Coolstore Frontend
+    node_selector: "{{ fe_ns }}"
+
+- name: Label frontend project
+  oc_label:
+    name: "{{ fe_namespace }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ fe_namespace_labels | dict2items }}"
+
+- name: "process frontend defs from template"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ fe_tmpdir }}/{{ item }}"
+  loop:
+    - "fe_buildconfig.yml"
+    - "fe_deployconfig.yml"
+    - "fe_imagestream.yml"
+    - "fe_route.yml"
+
+- name: "Create ImageStream"
+  oc_obj:
+    state: present
+    name: "{{ fe_appname }}"
+    namespace: "{{ fe_namespace }}"
+    kind: ImageStream
+    files:
+    - "{{ fe_tmpdir }}/fe_imagestream.yml"
+
+- name: "Create BuildConfig"
+  oc_obj:
+    state: present
+    name: "{{ fe_appname }}"
+    namespace: "{{ fe_namespace }}"
+    kind: BuildConfig
+    files:
+    - "{{ fe_tmpdir }}/fe_buildconfig.yml"
+    
+- name: "Create DeployConfig"
+  oc_obj:
+    state: present
+    name: "{{ fe_appname }}"
+    namespace: "{{ fe_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ fe_tmpdir }}/fe_deployconfig.yml"
+
+- name: create service for frontend-ui
+  oc_service:
+    name: "{{ fe_appname }}"
+    namespace: "{{ fe_namespace }}"
+    labels:
+      app: "{{ fe_appname }}"
+      comp-required: "true"
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+        protocol: TCP
+    selector:
+      deploymentconfig: "{{ fe_appname }}"
+
+- name: "Create Route"
+  oc_obj:
+    state: present
+    name: "{{ fe_appname }}"
+    namespace: "{{ fe_namespace }}"
+    kind: Route
+    files:
+    - "{{ fe_tmpdir }}/fe_route.yml"

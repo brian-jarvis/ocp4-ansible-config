@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rating-config
+  labels:
+    app: {{ rate_appname }}
+data:
+  rating-config.yaml: |-
+    rating.http.port: 8080
+    connection_string: mongodb://rating-mongodb.{{ rate_namespace }}.svc:27017
+    db_name: ratingdb
+    username: {{ rate_db_username }}
+    password: {{ rate_db_password }}

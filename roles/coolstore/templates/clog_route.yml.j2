@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ clog_appname }}
+  labels:
+    app: "{{ clog_appname }}"
+    comp-required: "true"
+spec:
+  host: {{ clog_route_hostname }}
+  to:
+    kind: Service
+    name: {{ clog_appname }}
+    weight: 100

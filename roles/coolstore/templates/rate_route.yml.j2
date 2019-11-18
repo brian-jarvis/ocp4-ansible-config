@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ rate_appname }}
+  labels:
+    app: "{{ rate_appname }}"
+    comp-required: "true"
+spec:
+  host: {{ rate_route_hostname }}
+  to:
+    kind: Service
+    name: {{ rate_appname }}

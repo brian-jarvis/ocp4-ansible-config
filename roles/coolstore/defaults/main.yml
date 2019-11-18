@@ -1,0 +1,84 @@
+---
+
+## Global settings
+oc_kubeconfig: "/etc/origin/master/admin.kubeconfig "
+git_branch: stable-ocp-3.11
+git_repo_uri: "https://github.com/brian-jarvis/coolstore-microservice"
+maven_mirror: "http://nexus.nexus.svc:8081/repository/maven-public/"
+npm_mirror: "http://nexus.nexus.svc:8081/repository/npm/"
+bower_mirror: "http://nexus.nexus.svc:8081/repository/bower-mirror/"
+
+cs_clusterrole: coolstore
+
+## Frontend-ui module_defaults
+fe_namespace: "coolstore"
+fe_namespace_nodeselectors: ""
+fe_namespace_labels: "{{ default('app=coolstore') | map_from_pairs }}"
+fe_appname: "coolstore-ui"
+fe_route_hostname: ""
+
+## Gateway module_defaults
+gw_namespace: "coolstore-gw"
+gw_namespace_nodeselectors: ""
+gw_namespace_labels: "{{ default('app=coolstore-gw') | map_from_pairs }}"
+gw_appname: "coolstore-gw"
+gw_route_hostname: ""
+
+## Inventory module_defaults
+invntry_namespace: "coolstore-inventory"
+invntry_namespace_nodeselectors: ""
+invntry_namespace_labels: "{{ default('app=coolstore-gw') | map_from_pairs }}"
+invntry_appname: "cs-inventory"
+invntry_route_hostname: ""
+
+invntry_db_username: "redhat"
+invntry_db_password: "redhat123"
+
+## Catalog module_defaults
+clog_namespace: "coolstore-catalog"
+clog_namespace_nodeselectors: ""
+clog_namespace_labels: "{{ default('app=coolstore-clog') | map_from_pairs }}"
+clog_appname: "cs-catalog"
+clog_route_hostname: ""
+
+clog_db_username: "redhat"
+clog_db_password: "redhat123"
+
+## Cart module_defaults
+cart_namespace: "coolstore-cart"
+cart_namespace_nodeselectors: ""
+cart_namespace_labels: "{{ default('app=coolstore-cart') | map_from_pairs }}"
+cart_appname: "cs-cart"
+cart_route_hostname: ""
+
+## Ratings module_defaults
+rate_namespace: "coolstore-rate"
+rate_namespace_nodeselectors: ""
+rate_namespace_labels: "{{ default('app=coolstore-rate') | map_from_pairs }}"
+rate_appname: "cs-rate"
+rate_route_hostname: ""
+
+rate_db_username: "redhat"
+rate_db_password: "redhat123"
+
+
+kie_server_user: "brmsAdmin"
+kie_server_password: "redhat123!"
+kie_container_deployment: "CoolStoreRulesContainer=com.redhat:coolstore:2.0.0"
+
+## Pricing module_defaults
+price_namespace: "coolstore-pricing"
+price_namespace_nodeselectors: ""
+price_namespace_labels: "{{ default('app=coolstore-price') | map_from_pairs }}"
+price_appname: "cs-price"
+price_route_hostname: ""
+
+## Review module_defaults
+rvw_namespace: "coolstore-review"
+rvw_namespace_nodeselectors: ""
+rvw_namespace_labels: "{{ default('app=coolstore-review') | map_from_pairs }}"
+rvw_appname: "cs-review"
+rvw_route_hostname: ""
+
+rvw_db_username: "redhat"
+rvw_db_password: "redhat123"

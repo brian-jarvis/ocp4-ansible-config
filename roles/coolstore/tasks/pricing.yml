@@ -1,0 +1,107 @@
+## Deploy the Pricing service
+
+# create working location for deploying pricing
+- name: Create temp directory for doing work in on target
+  command: mktemp -td coolstore-pricing-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    price_tmpdir: "{{ mktemp.stdout }}"
+
+- set_fact:
+    price_ns: "{{ price_ns | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ price_namespace_nodeselectors }}"
+
+- set_fact:
+    price_lb: "{{ price_lb | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ price_namespace_labels }}"
+
+
+- name: Add project for pricing service
+  oc_project:
+    state: present
+    name: "{{ price_namespace }}"
+    description: Coolstore Pricing
+    node_selector: "{{ price_ns }}"
+
+- name: Label pricing project
+  oc_label:
+    name: "{{ price_namespace }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ price_namespace_labels | dict2items }}"
+
+- name: "process pricing defs from template"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ price_tmpdir }}/{{ item }}"
+  loop:
+    - "price_buildconfig.yml"
+    - "price_deployconfig.yml"
+    - "price_imagestream.yml"
+    - "price_route.yml"
+    - "price_clusterrolebinding.yml"
+
+- name: "Create ImageStream"
+  oc_obj:
+    state: present
+    name: "{{ price_appname }}"
+    namespace: "{{ price_namespace }}"
+    kind: ImageStream
+    files:
+    - "{{ price_tmpdir }}/price_imagestream.yml"
+
+- name: "Create BuildConfig"
+  oc_obj:
+    state: present
+    name: "{{ price_appname }}"
+    namespace: "{{ price_namespace }}"
+    kind: BuildConfig
+    files:
+    - "{{ price_tmpdir }}/price_buildconfig.yml"
+
+
+- name: "Create DeployConfig"
+  oc_obj:
+    state: present
+    name: "{{ price_appname }}"
+    namespace: "{{ price_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ price_tmpdir }}/price_deployconfig.yml"
+
+- name: create service for pricing
+  oc_service:
+    name: "{{ price_appname }}"
+    namespace: "{{ price_namespace }}"
+    labels:
+      app: "{{ price_appname }}"
+      hystrix.enabled: "true"
+      comp-required: "true"
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+        protocol: TCP
+    selector:
+      deploymentconfig: "{{ price_appname }}"
+
+- name: "Create Route"
+  oc_obj:
+    state: present
+    name: "{{ price_appname }}"
+    namespace: "{{ price_namespace }}"
+    kind: Route
+    files:
+    - "{{ price_tmpdir }}/price_route.yml"
+
+- name: "Create ClusterRoleBinding"
+  oc_obj:
+    state: present
+    name: "coolstore-{{ price_appname }}-access"
+    namespace: "{{ price_namespace }}"
+    kind: ClusterRoleBinding
+    files:
+    - "{{ price_tmpdir }}/price_clusterrolebinding.yml"

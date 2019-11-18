@@ -1,0 +1,96 @@
+## Deploy the gateway service
+
+# create working location for deploying gateway-interface
+- name: Create temp directory for doing work in on target
+  command: mktemp -td coolstore-gw-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    gw_tmpdir: "{{ mktemp.stdout }}"
+
+- set_fact:
+    gw_ns: "{{ gw_ns | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ gw_namespace_nodeselectors }}"
+
+- set_fact:
+    gw_lb: "{{ gw_lb | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ gw_namespace_labels }}"
+
+
+- name: Add project for gateway-interface
+  oc_project:
+    state: present
+    name: "{{ gw_namespace }}"
+    description: Coolstore Gateway
+    node_selector: "{{ gw_ns }}"
+
+- name: Label gateway project
+  oc_label:
+    name: "{{ gw_namespace }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ gw_namespace_labels | dict2items }}"
+
+- name: "process gateway defs from template"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ gw_tmpdir }}/{{ item }}"
+  loop:
+    - "gw_buildconfig.yml"
+    - "gw_deployconfig.yml"
+    - "gw_imagestream.yml"
+    - "gw_route.yml"
+
+- name: "Create ImageStream"
+  oc_obj:
+    state: present
+    name: "{{ gw_appname }}"
+    namespace: "{{ gw_namespace }}"
+    kind: ImageStream
+    files:
+    - "{{ gw_tmpdir }}/gw_imagestream.yml"
+
+- name: "Create BuildConfig"
+  oc_obj:
+    state: present
+    name: "{{ gw_appname }}"
+    namespace: "{{ gw_namespace }}"
+    kind: BuildConfig
+    files:
+    - "{{ gw_tmpdir }}/gw_buildconfig.yml"
+    
+- name: "Create DeployConfig"
+  oc_obj:
+    state: present
+    name: "{{ gw_appname }}"
+    namespace: "{{ gw_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ gw_tmpdir }}/gw_deployconfig.yml"
+
+- name: create service for gateway-interface
+  oc_service:
+    name: "{{ gw_appname }}"
+    namespace: "{{ gw_namespace }}"
+    labels:
+      app: "{{ gw_appname }}"
+      hystrix.enabled: "true"
+      comp-required: "true"
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+        protocol: TCP
+    selector:
+      deploymentconfig: "{{ gw_appname }}"
+
+- name: "Create Route"
+  oc_obj:
+    state: present
+    name: "{{ gw_appname }}"
+    namespace: "{{ gw_namespace }}"
+    kind: Route
+    files:
+    - "{{ gw_tmpdir }}/gw_route.yml"

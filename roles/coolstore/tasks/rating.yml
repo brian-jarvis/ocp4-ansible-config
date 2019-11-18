@@ -1,0 +1,142 @@
+## Deploy the rating service
+
+# create working location for deploying rating
+- name: Create temp directory for doing work in on target
+  command: mktemp -td coolstore-rating-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    rate_tmpdir: "{{ mktemp.stdout }}"
+
+- set_fact:
+    rate_ns: "{{ rate_ns | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ rate_namespace_nodeselectors }}"
+
+- set_fact:
+    rate_lb: "{{ rate_lb | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ rate_namespace_labels }}"
+
+
+- name: Add project for rating service
+  oc_project:
+    state: present
+    name: "{{ rate_namespace }}"
+    description: Coolstore Ratings
+    node_selector: "{{ rate_ns }}"
+
+- name: Label rating project
+  oc_label:
+    name: "{{ rate_namespace }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ rate_namespace_labels | dict2items }}"
+
+- name: "process rating defs from template"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ rate_tmpdir }}/{{ item }}"
+  loop:
+    - "rate_buildconfig.yml"
+    - "rate_deployconfig.yml"
+    - "rate-mongo_deployconfig.yml"
+    - "rate_configmap.yml"
+    - "rate_imagestream.yml"
+    - "rate_route.yml"
+    - "rate_clusterrolebinding.yml"
+
+- name: "Create ImageStream"
+  oc_obj:
+    state: present
+    name: "{{ rate_appname }}"
+    namespace: "{{ rate_namespace }}"
+    kind: ImageStream
+    files:
+    - "{{ rate_tmpdir }}/rate_imagestream.yml"
+
+- name: "Create BuildConfig"
+  oc_obj:
+    state: present
+    name: "{{ rate_appname }}"
+    namespace: "{{ rate_namespace }}"
+    kind: BuildConfig
+    files:
+    - "{{ rate_tmpdir }}/rate_buildconfig.yml"
+
+- name: "Create Configmap"
+  oc_obj:
+    state: present
+    name: "rating-config"
+    namespace: "{{ rate_namespace }}"
+    kind: ConfigMap
+    files:
+    - "{{ rate_tmpdir }}/rate_configmap.yml"
+
+- name: "Create DeployConfig"
+  oc_obj:
+    state: present
+    name: "{{ rate_appname }}"
+    namespace: "{{ rate_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ rate_tmpdir }}/rate_deployconfig.yml"
+
+- name: "Create Mopngo DeployConfig"
+  oc_obj:
+    state: present
+    name: "rating-mongodb"
+    namespace: "{{ rate_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ rate_tmpdir }}/rate-mongo_deployconfig.yml"
+
+- name: create service for rating
+  oc_service:
+    name: "{{ rate_appname }}"
+    namespace: "{{ rate_namespace }}"
+    labels:
+      app: "{{ rate_appname }}"
+      hystrix.enabled: "true"
+      comp-required: "true"
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+        protocol: TCP
+    selector:
+      deploymentconfig: "{{ rate_appname }}"
+
+- name: create service for rating-mongodb
+  oc_service:
+    name: "rating-mongodb"
+    namespace: "{{ rate_namespace }}"
+    labels:
+      app: "rating-mongodb"
+    ports:
+      - name: mongo
+        port: 27017
+        targetPort: 27017
+        protocol: TCP
+    selector:
+      deploymentconfig: "rating-mongodb"
+    session_affinity: None
+    service_type: ClusterIP
+
+- name: "Create Route"
+  oc_obj:
+    state: present
+    name: "{{ rate_appname }}"
+    namespace: "{{ rate_namespace }}"
+    kind: Route
+    files:
+    - "{{ rate_tmpdir }}/rate_route.yml"
+
+- name: "Create ClusterRoleBinding"
+  oc_obj:
+    state: present
+    name: "coolstore-{{ rate_appname }}-access"
+    namespace: "{{ rate_namespace }}"
+    kind: ClusterRoleBinding
+    files:
+    - "{{ rate_tmpdir }}/rate_clusterrolebinding.yml"

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: {{ rvw_appname }}
+  labels:
+    app: "{{ rvw_appname }}"
+    comp-required: "true"
+spec:
+  host: {{ rvw_route_hostname }}
+  to:
+    kind: Service
+    name: {{ rvw_appname }}

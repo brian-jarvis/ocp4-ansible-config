@@ -1,0 +1,38 @@
+---
+- name: CoolStore Catalog Checkpoint Start
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Set Cluster Operator 'In Progress'
+    run_once: true
+    set_stats:
+      data:
+        installer_phase_coolstore_catalog_application:
+          title: "CoolStore Catalog"
+          playbook: "playbooks/coolstore/catalog/config.yml"
+          status: "In Progress"
+          start: "{{ lookup('pipe', 'date +%Y%m%d%H%M%SZ') }}"
+
+
+- name: Configure CoolStore Catalog
+  hosts: all
+  gather_facts: false
+  vars:
+    openshift_ansible_path: "/usr/share/ansible/openshift-ansible"
+  tasks:
+    - name: Install CoolStore Catalog
+      include_role:
+        name: coolstore
+        tasks_from: catalog
+
+- name: CoolStore Catalog Checkpoint End
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Set Cluster Operator 'Complete'
+    run_once: true
+    set_stats:
+      data:
+        installer_phase_coolstore_catalog_application:
+          status: "Complete"
+          end: "{{ lookup('pipe', 'date +%Y%m%d%H%M%SZ') }}"

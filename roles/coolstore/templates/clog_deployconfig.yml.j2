@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: {{ clog_appname }}
+  labels:
+    app: {{ clog_appname }}
+    comp-required: "true"
+    uses-database: "true"
+spec:
+  replicas: 1
+  selector:
+    deploymentconfig: {{ clog_appname }}
+  strategy:
+    resources: {}
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ clog_appname }}
+        deploymentconfig: {{ clog_appname }}
+      name: {{ clog_appname }}
+    spec:
+      containers:
+      - env:
+        - name: JWS_ADMIN_USERNAME
+          value: Skq3VtCd
+        - name: JWS_ADMIN_PASSWORD
+          value: oktt6yhw
+        - name: DB_USERNAME
+          value: {{ clog_db_username }}
+        - name: DB_PASSWORD
+          value: {{ clog_db_password }}
+        - name: DB_NAME
+          value: catalogdb
+        - name: DB_SERVER
+          value: catalog-mongodb.{{ clog_namespace }}.svc
+        image: {{ clog_appname }}
+        imagePullPolicy: Always
+        name: {{ clog_appname }}
+        ports:
+        - containerPort: 8778
+          name: jolokia
+          protocol: TCP
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        livenessProbe:
+          exec:
+            command:
+              - curl
+              - '-f'
+              - 'http://localhost:8080/api/products'
+          initialDelaySeconds: 60
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 10
+        readinessProbe:
+          exec:
+            command:
+              - curl
+              - '-f'
+              - 'http://localhost:8080/api/products'
+          initialDelaySeconds: 60
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 10
+        resources:
+          limits:
+            cpu: 1500m
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 75
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - {{ clog_appname }}
+      from:
+        kind: ImageStreamTag
+        name: {{ clog_appname }}:latest
+    type: ImageChange
+  - type: ConfigChange

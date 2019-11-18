@@ -1,0 +1,136 @@
+## Deploy the gateway service
+
+# create working location for deploying gateway-interface
+- name: Create temp directory for doing work in on target
+  command: mktemp -td coolstore-inventory-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    invntry_tmpdir: "{{ mktemp.stdout }}"
+
+- set_fact:
+    invntry_ns: "{{ invntry_ns | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ invntry_namespace_nodeselectors }}"
+
+- set_fact:
+    invntry_lb: "{{ invntry_lb | default([]) }} + [ '{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ invntry_namespace_labels }}"
+
+
+- name: Add project for gateway-interface
+  oc_project:
+    state: present
+    name: "{{ invntry_namespace }}"
+    description: Coolstore Inventory
+    node_selector: "{{ invntry_ns }}"
+
+- name: Label gateway project
+  oc_label:
+    name: "{{ invntry_namespace }}"
+    state: add
+    kind: namespace
+    labels:
+      "{{ invntry_namespace_labels | dict2items }}"
+
+- name: "process inventory defs from template"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ invntry_tmpdir }}/{{ item }}"
+  loop:
+    - "invntry_buildconfig.yml"
+    - "invntry_deployconfig.yml"
+    - "invntry-psql_deployconfig.yml"
+    - "invntry_imagestream.yml"
+    - "invntry_route.yml"
+    - "invntry_clusterrolebinding.yml"
+
+- name: "Create ImageStream"
+  oc_obj:
+    state: present
+    name: "{{ invntry_appname }}"
+    namespace: "{{ invntry_namespace }}"
+    kind: ImageStream
+    files:
+    - "{{ invntry_tmpdir }}/invntry_imagestream.yml"
+
+- name: "Create BuildConfig"
+  oc_obj:
+    state: present
+    name: "{{ invntry_appname }}"
+    namespace: "{{ invntry_namespace }}"
+    kind: BuildConfig
+    files:
+    - "{{ invntry_tmpdir }}/invntry_buildconfig.yml"
+    
+- name: "Create DeployConfig"
+  oc_obj:
+    state: present
+    name: "{{ invntry_appname }}"
+    namespace: "{{ invntry_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ invntry_tmpdir }}/invntry_deployconfig.yml"
+
+- name: "Create psql DeployConfig"
+  oc_obj:
+    state: present
+    name: "inventory-postgresql"
+    namespace: "{{ invntry_namespace }}"
+    kind: DeploymentConfig
+    files:
+    - "{{ invntry_tmpdir }}/invntry-psql_deployconfig.yml"
+
+- name: create service for gateway-interface
+  oc_service:
+    name: "{{ invntry_appname }}"
+    namespace: "{{ invntry_namespace }}"
+    labels:
+      app: "{{ invntry_appname }}"
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+        protocol: TCP
+    selector:
+      deploymentconfig: "{{ invntry_appname }}"
+
+- name: create service for interface-postgresql
+  oc_service:
+    name: "inventory-postgresql"
+    namespace: "{{ invntry_namespace }}"
+    labels:
+      app: "inventory"
+    ports:
+      - name: db
+        port: 5432
+        targetPort: 5432
+        protocol: TCP
+    selector:
+      deploymentconfig: "inventory-postgresql"
+
+# - name: Annotate service
+#   command: >
+#     oc annotate service {{ invntry_appname }} -n {{ invntry_namespace }} 
+#     service.alpha.openshift.io/dependencies: '[{"name":"inventory-postgresql","namespace":"","kind":"Service"}]'
+#     --overwrite=True
+
+- name: "Create Route"
+  oc_obj:
+    state: present
+    name: "{{ invntry_appname }}"
+    namespace: "{{ invntry_namespace }}"
+    kind: Route
+    files:
+    - "{{ invntry_tmpdir }}/invntry_route.yml"
+
+- name: "Create ClusterRoleBinding"
+  oc_obj:
+    state: present
+    name: "coolstore-{{ invntry_appname }}-access"
+    namespace: "{{ invntry_namespace }}"
+    kind: ClusterRoleBinding
+    files:
+    - "{{ invntry_tmpdir }}/invntry_clusterrolebinding.yml"
+
+
