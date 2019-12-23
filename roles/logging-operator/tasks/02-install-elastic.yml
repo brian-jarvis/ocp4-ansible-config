@@ -5,7 +5,7 @@
     src: "{{ item }}.j2"
     dest: "{{ tmp_dir }}/{{ item }}"
   loop:
-    - "elastic-catalogsourceconfig.yml"
+    # - "elastic-catalogsourceconfig.yml"
     - "elastic-operatorgroup.yml"
     - "elastic-role.yml"
     - "elastic-rolebinding.yml"
@@ -20,15 +20,15 @@
     files:
     - "{{ tmp_dir }}/elastic-operatorgroup.yml"
 
-- name: "Elasticsearch: Apply CatalogSourceConfig"
-  oc_obj:
-    name: elasticsearch
-    kubeconfig: "{{ kube_config_path }}"
-    state: present
-    namespace: openshift-marketplace
-    kind: CatalogSourceConfig
-    files:
-    - "{{ tmp_dir }}/elastic-catalogsourceconfig.yml"
+# - name: "Elasticsearch: Apply CatalogSourceConfig"
+#   oc_obj:
+#     name: elasticsearch
+#     kubeconfig: "{{ kube_config_path }}"
+#     state: present
+#     namespace: openshift-marketplace
+#     kind: CatalogSourceConfig
+#     files:
+#     - "{{ tmp_dir }}/elastic-catalogsourceconfig.yml"
 
 - name: "Elasticsearch: Apply Role"
   oc_obj:
