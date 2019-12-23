@@ -1,0 +1,7 @@
+*.retry
+**/*.retry
+*.pyc
+**/*.pyc
+files/pull-secret
+#roles/**
+#!roles/requirements.yml
